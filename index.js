@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xch7i.mongodb.net/?appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -36,16 +36,31 @@ async function run() {
 
         app.post("/foods", async (req, res) => {
             const food = req.body;
-            const result = await foodCollections.insertOne(food);
+            const {expireDate, ...newFood} = food;
+            newFood.date = new Date(expireDate)
+            const result = await foodCollections.insertOne(newFood);
             res.send(result);
         })
         app.get("/foods", async (req, res) => {
             const userEmail = req.query?.email;
+            // console.log(userEmail)
             let query = {}
             if (userEmail) {
-                query = { email: userEmail }
+                query = { donerEmail: userEmail }
             }
-            const result = foodCollections.find(query).toArray();
+            const result =await foodCollections.find(query).toArray();
+            res.send(result);
+        })
+        app.get("/foods/:id", async(req,res)=>{
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)}
+            const result = await foodCollections.findOne(query)
+            res.send(result);
+        })
+        app.delete("/food/:id", async(req,res)=>{
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)};
+            const result = await foodCollections.deleteOne(query);
             res.send(result);
         })
 
