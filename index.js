@@ -16,7 +16,7 @@ app.use(cookieParser());
 
 const verifyToken = (req,res, next) =>{
     const token = req.cookies?.token;
-    console.log(token,"token")
+    // console.log(token,"token")
     if(!token){
         return res.status(403).send({message: "Forbidden Assess"})
     }
@@ -87,7 +87,7 @@ async function run() {
         app.get("/foods", verifyToken, async (req, res) => {
             const userEmail = req.query?.email;
             const decodeEmail = req.user?.email;
-            console.log(userEmail, decodeEmail, "user and decode")
+            // console.log(userEmail, decodeEmail, "user and decode")
             if(userEmail !== decodeEmail){
                 console.log("user and decode Mail is not ecqual")
                 return res.status(403).send({message: "Forbidden Access"})
