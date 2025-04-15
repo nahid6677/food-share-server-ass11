@@ -14,7 +14,24 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-
+const verifyToken = (req,res, next) =>{
+    const token = req.cookies?.token;
+    console.log(token,"token")
+    if(!token){
+        return res.status(403).send({message: "Forbidden Assess"})
+    }
+    if(token){
+        jwt.verify(token, process.env.JWT_SECRET, (err, decode) =>{
+            if(err){
+                // console.log(err)
+                return res.status(401).send({message: "Unauthorized"})
+            }
+            console.log(decode, "decode")
+            req.user = decode;
+            next()
+        })
+    }
+}
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -42,6 +59,9 @@ async function run() {
         app.post("/jwt", (req, res) => {
             const userEmail = req.body;
             // console.log(userEmail,"ddddddddd")
+            if(!userEmail){
+                return res.send({message : "user not found"})
+            }
             const token = jwt.sign(userEmail, process.env.JWT_SECRET, { expiresIn: "30m" })
             res.cookie('token', token, {
                 httpOnly: true,
@@ -64,14 +84,29 @@ async function run() {
             const result = await foodCollections.insertOne(newFood);
             res.send(result);
         })
-        app.get("/foods", async (req, res) => {
+        app.get("/foods", verifyToken, async (req, res) => {
             const userEmail = req.query?.email;
-            // console.log(userEmail)
-            let query = {}
-            if (userEmail) {
-                query = { donerEmail: userEmail }
+            const decodeEmail = req.user?.email;
+            console.log(userEmail, decodeEmail, "user and decode")
+            if(userEmail !== decodeEmail){
+                console.log("user and decode Mail is not ecqual")
+                return res.status(403).send({message: "Forbidden Access"})
             }
-            const result = await foodCollections.find(query).toArray();
+            // let query = {}
+            // if (userEmail) {
+            //     query = { donerEmail: userEmail }
+            // }
+            const result = await foodCollections.find().toArray();
+            res.send(result);
+        })
+        app.get("/managemyfood", async (req,res) =>{
+            const userEmail = req.query.email;
+            console.log(userEmail)
+            let query = {};
+            if(userEmail){
+                query = {donerEmail: userEmail}
+            }
+            const result = await foodCollections.find(query).toArray()
             res.send(result);
         })
         app.get("/foods/:id", async (req, res) => {
